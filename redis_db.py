@@ -2,9 +2,7 @@ import logging
 import os
 import sys
 import threading
-import typing
 from typing import Any
-
 from redis import Redis as r
 
 from config import HOST, PASSWORD, PORT
@@ -34,19 +32,20 @@ class Redis(r):
         elif not host or not port:
             logger.error("Port Number not found")
             sys.exit()
+
         kwargs["host"] = host
         if password and len(password) > 1:
             kwargs["password"] = password
         kwargs["port"] = port
         kwargs["encoding"] = encoding
         kwargs["decode_responses"] = decode_responses
-        # kwargs['client_name'] = client_name
-        # kwargs['username'] = username
+
         try:
             super().__init__(**kwargs)
         except Exception as e:
             logger.exception(f"Error while connecting to redis: {e}")
             sys.exit()
+
         self.logger = logger
         self._cache = {}
         threading.Thread(target=self.re_cache).start()
@@ -74,7 +73,13 @@ class Redis(r):
         self._cache[key] = value
         return self.set(key, value)
 
+    # NEW METHOD: get with default value
+    def get_with_default(self, key: Any, default=None):
+        value = self.get(key)
+        return value if value is not None else default
 
+
+# DB CONNECTION START
 db = Redis(
     host=HOST,
     port=PORT,
@@ -82,8 +87,8 @@ db = Redis(
     decode_responses=True,
 )
 
-
 log.info(f"Starting redis on {HOST}:{PORT}")
 if not db.ping():
     log.error(f"Redis is not available on {HOST}:{PORT}")
     exit(1)
+    
